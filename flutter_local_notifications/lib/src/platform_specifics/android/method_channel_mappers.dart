@@ -224,6 +224,7 @@ extension AndroidNotificationDetailsMapper on AndroidNotificationDetails {
         'colorized': colorized,
         'number': number,
         'audioAttributesUsage': audioAttributesUsage.value,
+        'useCustomTimerLayout': useCustomTimerLayout,
       }
         ..addAll(_convertActionsToMap(actions))
         ..addAll(_convertStyleInformationToMap())

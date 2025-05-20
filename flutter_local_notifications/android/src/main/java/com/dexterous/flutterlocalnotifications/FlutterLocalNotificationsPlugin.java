@@ -221,6 +221,16 @@ public class FlutterLocalNotificationsPlugin
 
   private PermissionRequestProgress permissionRequestProgress = PermissionRequestProgress.None;
 
+  public static int getViewIdOfActions(int i) {
+    if (i == 1) {
+      return R.id.action_button1;
+    }
+    if (i == 2) {
+      return R.id.action_button2;
+    }
+    return R.id.action_button1;
+  }
+
   static void rescheduleNotifications(Context context) {
     ArrayList<NotificationDetails> scheduledNotifications = loadScheduledNotifications(context);
     for (NotificationDetails notificationDetails : scheduledNotifications) {
@@ -421,6 +431,65 @@ public class FlutterLocalNotificationsPlugin
 
     if (notificationDetails.number != null) {
       builder.setNumber(notificationDetails.number);
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && notificationDetails.usesChronometer && call.argument("useCustomTimerLayout")) {
+      Boolean isPnWithActions = notificationDetails.getActions() != null && !notificationDetails.getActions().isEmpty();
+      RemoteViews notificationView = new RemoteViews(context.getPackageName(), isPnWithActions ? R.layout.custom_timer_view_with_actions : R.layout.custom_timer_view);
+      if (!isPnWithActions) {
+        String iconName = notificationDetails.getIcon();
+        if (iconName != null) {
+          int iconResId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
+          if (iconResId != 0) {
+            notificationView.setImageViewResource(R.id.small_icon, iconResId);
+          }
+        }
+      }
+
+      String appName;
+      try {
+        appName = context.getApplicationInfo().loadLabel(context.getPackageManager()).toString();
+      } catch (Exception e) {
+        appName = "cult.fit";
+      }
+      if(!isPnWithActions) {
+        notificationView.setTextViewText(R.id.appName, appName);
+      }
+      notificationView.setTextViewText(R.id.title, notificationDetails.getTitle());
+      if(!isPnWithActions) {
+        notificationView.setTextViewText(R.id.body, notificationDetails.getBody());
+        notificationView.setTextViewText(R.id.subTitle, notificationDetails.getSubText() != null ? notificationDetails.getSubText() : "");
+      }
+      notificationView.setChronometerCountDown(R.id.timer, notificationDetails.getChronometerCountDown());
+      notificationView.setChronometer(R.id.timer, SystemClock.elapsedRealtime() + (notificationDetails.getWhen() - System.currentTimeMillis()), null, true);
+      // notificationView.setChronometer(R.id.timer, notificationDetails.getTimestamp(), null, true);
+      builder.setCustomContentView(notificationView);
+
+      RemoteViews bigNotificationView = new RemoteViews(context.getPackageName(), isPnWithActions ? R.layout.big_custom_timer_with_actions : R.layout.big_custom_timer_view);
+      if (!isPnWithActions) {
+        String iconName = notificationDetails.getIcon();
+        if (iconName != null) {
+          int iconResId = context.getResources().getIdentifier(iconName, "drawable", context.getPackageName());
+          if (iconResId != 0) {
+            bigNotificationView.setImageViewResource(R.id.small_icon, iconResId);
+          }
+        }
+      }
+      bigNotificationView.setTextViewText(R.id.appName, appName);
+      bigNotificationView.setTextViewText(R.id.title, notificationDetails.getTitle());
+      if(!isPnWithActions) {
+        bigNotificationView.setTextViewText(R.id.body, notificationDetails.getBody());
+        bigNotificationView.setTextViewText(R.id.subTitle, notificationDetails.getSubText() != null ? notificationDetails.getSubText() : "");
+      }
+      bigNotificationView.setChronometerCountDown(R.id.timer, notificationDetails.getChronometerCountDown());
+      bigNotificationView.setChronometer(R.id.timer, SystemClock.elapsedRealtime() + (notificationDetails.getWhen() - System.currentTimeMillis()), null, true);
+      builder.setCustomBigContentView(bigNotificationView);
+      builder.setCustomHeadsUpContentView(notificationView);
+      builder.setUsesChronometer(false);
+      builder.setShowWhen(false);
+      if(isPnWithActions) {
+        builder.setAutoCancel(false);
+      }
     }
 
     setVisibility(notificationDetails, builder);
